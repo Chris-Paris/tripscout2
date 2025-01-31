@@ -19,7 +19,13 @@ interface TravelResultsProps {
 }
 
 interface SectionState {
-  [key: string]: boolean;
+  attractions: boolean;
+  restaurants: boolean;
+  gems: boolean;
+  activities: boolean;
+  itinerary: boolean;
+  events: boolean;
+  accommodation: boolean;
 }
 
 const interestTranslations: Record<string, string> = {
@@ -84,7 +90,7 @@ export function TravelResults({
     }
   }, [suggestions]);
 
-  const toggleSection = (section: string) => {
+  const toggleSection = (section: keyof SectionState) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -95,13 +101,7 @@ export function TravelResults({
     analytics.trackLoadMore('attractions', destination);
     setIsLoadingMore(prev => ({ ...prev, attractions: true }));
     try {
-      const existingAttractions = [...suggestions.mustSeeAttractions, ...additionalAttractions].map(a => a.title);
-      const newAttractions = await generateMoreAttractions({
-        destination,
-        interests,
-        language,
-        existingAttractions
-      });
+      const newAttractions = await generateMoreAttractions(destination);
       setAdditionalAttractions(prev => [...prev, ...newAttractions]);
       toast({
         title: language === 'en' ? 'Success!' : 'Succès !',
@@ -127,13 +127,7 @@ export function TravelResults({
     analytics.trackLoadMore('hiddenGems', destination);
     setIsLoadingMore(prev => ({ ...prev, gems: true }));
     try {
-      const existingGems = [...suggestions.hiddenGems, ...additionalGems].map(g => g.title);
-      const newGems = await generateMoreHiddenGems({
-        destination,
-        interests,
-        language,
-        existingGems
-      });
+      const newGems = await generateMoreHiddenGems(destination);
       setAdditionalGems(prev => [...prev, ...newGems]);
       toast({
         title: language === 'en' ? 'Success!' : 'Succès !',
@@ -159,13 +153,7 @@ export function TravelResults({
     analytics.trackLoadMore('activities', destination);
     setIsLoadingMore(prev => ({ ...prev, activities: true }));
     try {
-      const existingActivities = [...suggestions.itinerary.flatMap(day => day.activities), ...additionalActivities.map(a => a.title)];
-      const newActivities = await generateMoreActivities({
-        destination,
-        interests,
-        language,
-        existingActivities
-      });
+      const newActivities = await generateMoreActivities(destination);
       setAdditionalActivities(prev => [...prev, ...newActivities]);
       toast({
         title: language === 'en' ? 'Success!' : 'Succès !',
@@ -205,7 +193,7 @@ export function TravelResults({
     }
   };
 
-  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: string }) => {
+  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: keyof SectionState }) => {
     // Don't render the section if it's events and there are no items
     if (type === 'events' && items.length === 0) {
       return null;

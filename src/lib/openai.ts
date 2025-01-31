@@ -6,6 +6,27 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
+interface Attraction {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}
+
+interface Activity {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}
+
+interface Gem {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}
+
 const validateResponse = (data: any): data is TravelSuggestions => {
   if (!data || typeof data !== 'object') {
     console.error('Invalid response: not an object', data);
@@ -43,36 +64,6 @@ const validateResponse = (data: any): data is TravelSuggestions => {
   }
 
   return true;
-};
-
-const processAttraction = (attraction: {
-  title: string;
-  description: string;
-  location?: string;
-  coordinates?: { lat: number; lng: number };
-}) => {
-  // Add any necessary processing for attractions here
-  return attraction;
-};
-
-const processGem = (gem: {
-  title: string;
-  description: string;
-  location?: string;
-  coordinates?: { lat: number; lng: number };
-}) => {
-  // Add any necessary processing for gems here
-  return gem;
-};
-
-const processActivity = (activity: {
-  title: string;
-  description: string;
-  location?: string;
-  coordinates?: { lat: number; lng: number };
-}) => {
-  // Add any necessary processing for activities here
-  return activity;
 };
 
 export const generateTravelPlan = async ({
@@ -265,88 +256,36 @@ export const generateTravelPlan = async ({
   }
 };
 
-export const generateMoreAttractions = async ({
-  destination,
-  interests,
-  language = 'en',
-  existingAttractions
-}: {
-  destination: string;
-  interests: string[];
-  language?: 'en' | 'fr';
-  existingAttractions: string[];
-}) => {
+export const generateMoreAttractions = async (destination: string): Promise<Attraction[]> => {
   try {
-    const systemPrompt = `You are a travel assistant that MUST respond with ONLY a valid JSON object containing an 'attractions' array, no other text. Follow these rules:
-1. Response must be a JSON object with a single 'attractions' key containing an array of exactly 5 NEW attractions
-2. Each attraction must be highly relevant to the user's interests: ${interests.join(', ')}
-3. Do not include any explanatory text before or after the JSON
-4. Each attraction object must follow this exact structure:
-{
-  "title": "Attraction Name",
-  "description": "Detailed description of the attraction",
-  "location": "Address or area",
-  "coordinates": {
-    "lat": 12.3456,
-    "lng": 78.9012
-  }
-}
-5. ${language === 'fr' ? 'ALL text content MUST be in French' : 'All content should be in English'}
-6. Ensure coordinates are as accurate as possible
-7. Focus on unique and interesting attractions that match the user's interests
-8. Response format must be exactly:
-{
-  "attractions": [
-    { attraction1 },
-    { attraction2 },
-    ...
-  ]
-}`;
-
-    const attractions = existingAttractions.map((attraction: string) => `- ${attraction}`).join('\n');
-    const userPrompt = language === 'fr'
-      ? `Générez 5 nouvelles attractions pour ${destination} qui correspondent aux intérêts suivants: ${interests.join(', ')}. Ne pas inclure ces attractions existantes:\n${attractions}. REPONDEZ UNIQUEMENT AVEC UN OBJET JSON CONTENANT UN TABLEAU 'attractions'.`
-      : `Generate 5 new attractions for ${destination} that match these interests: ${interests.join(', ')}. Do not include these existing attractions:\n${attractions}. RESPOND ONLY WITH A JSON OBJECT CONTAINING AN 'attractions' ARRAY.`;
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: "You are a helpful travel assistant." },
+        { role: "user", content: `Generate more attractions for ${destination} in JSON format.` }
       ],
-      model: 'gpt-3.5-turbo',
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      stream: false
+      response_format: { type: "json_object" }
     });
 
-    const content = completion.choices[0]?.message?.content;
+    const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('No content received from OpenAI');
+      throw new Error('No content in OpenAI response');
     }
 
     try {
-      const parsedContent: { attractions: { title: string; description: string; location: string; coordinates: { lat: number; lng: number } }[] } = JSON.parse(content);
-      if (!parsedContent.attractions || !Array.isArray(parsedContent.attractions) || parsedContent.attractions.length !== 5) {
-        console.error('Invalid response structure:', parsedContent);
-        throw new Error('Invalid response format: expected object with attractions array of 5 items');
-      }
-      
-      // Validate each attraction
-      parsedContent.attractions.forEach(attraction => {
-        if (!attraction.title || !attraction.description || !attraction.location || 
-            !attraction.coordinates?.lat || !attraction.coordinates?.lng) {
-          console.error('Invalid attraction format:', attraction);
-          throw new Error('Invalid attraction format');
-        }
-      });
-
-      return parsedContent.attractions.map(processAttraction);
+      const parsedContent = JSON.parse(content);
+      return parsedContent.attractions.map((attraction: Attraction) => ({
+        title: attraction.title,
+        description: attraction.description,
+        location: attraction.location,
+        coordinates: attraction.coordinates
+      }));
     } catch (e: unknown) {
-      console.error('JSON parsing error:', e, '\nContent:', content);
+      console.error('Error parsing JSON:', e);
       if (e instanceof Error) {
-        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+        throw new Error(`Failed to parse OpenAI response: ${e.message}`);
       }
-      throw new Error('Failed to parse OpenAI response as JSON');
+      throw new Error('Failed to parse OpenAI response');
     }
   } catch (error: unknown) {
     console.error('Error generating more attractions:', error);
@@ -357,91 +296,36 @@ export const generateMoreAttractions = async ({
   }
 };
 
-export const generateMoreHiddenGems = async ({
-  destination,
-  interests,
-  language = 'en',
-  existingGems
-}: {
-  destination: string;
-  interests: string[];
-  language?: 'en' | 'fr';
-  existingGems: string[];
-}) => {
+export const generateMoreHiddenGems = async (destination: string): Promise<Gem[]> => {
   try {
-    const systemPrompt = `You are a travel assistant that MUST respond with ONLY a valid JSON object containing a 'hiddenGems' array, no other text. Follow these rules:
-1. Response must be a JSON object with a single 'hiddenGems' key containing an array of exactly 5 NEW hidden gems
-2. Each hidden gem must be:
-   - Highly relevant to the user's interests: ${interests.join(', ')}
-   - Less known or off the beaten path
-   - Unique and authentic to the local culture
-   - Not commonly found in standard tourist guides
-3. Do not include any explanatory text before or after the JSON
-4. Each hidden gem object must follow this exact structure:
-{
-  "title": "Hidden Gem Name",
-  "description": "Detailed description emphasizing why it's special and unique",
-  "location": "Address or area",
-  "coordinates": {
-    "lat": 12.3456,
-    "lng": 78.9012
-  }
-}
-5. ${language === 'fr' ? 'ALL text content MUST be in French' : 'All content should be in English'}
-6. Ensure coordinates are as accurate as possible
-7. Response format must be exactly:
-{
-  "hiddenGems": [
-    { gem1 },
-    { gem2 },
-    ...
-  ]
-}`;
-
-    const gems = existingGems.map((gem: string) => `- ${gem}`).join('\n');
-    const userPrompt = language === 'fr'
-      ? `Générez 5 nouveaux trésors cachés pour ${destination} qui correspondent aux intérêts suivants: ${interests.join(', ')}. Ces lieux doivent être authentiques et hors des sentiers battus. Ne pas inclure ces lieux existants:\n${gems}. REPONDEZ UNIQUEMENT AVEC UN OBJET JSON CONTENANT UN TABLEAU 'hiddenGems'.`
-      : `Generate 5 new hidden gems for ${destination} that match these interests: ${interests.join(', ')}. These places should be authentic and off the beaten path. Do not include these existing places:\n${gems}. RESPOND ONLY WITH A JSON OBJECT CONTAINING A 'hiddenGems' ARRAY.`;
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: "You are a helpful travel assistant." },
+        { role: "user", content: `Generate more hidden gems for ${destination} in JSON format.` }
       ],
-      model: 'gpt-3.5-turbo',
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      stream: false
+      response_format: { type: "json_object" }
     });
 
-    const content = completion.choices[0]?.message?.content;
+    const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('No content received from OpenAI');
+      throw new Error('No content in OpenAI response');
     }
 
     try {
-      const parsedContent: { hiddenGems: { title: string; description: string; location: string; coordinates: { lat: number; lng: number } }[] } = JSON.parse(content);
-      if (!parsedContent.hiddenGems || !Array.isArray(parsedContent.hiddenGems) || parsedContent.hiddenGems.length !== 5) {
-        console.error('Invalid response structure:', parsedContent);
-        throw new Error('Invalid response format: expected object with hiddenGems array of 5 items');
-      }
-      
-      // Validate each hidden gem
-      parsedContent.hiddenGems.forEach(gem => {
-        if (!gem.title || !gem.description || !gem.location || 
-            !gem.coordinates?.lat || !gem.coordinates?.lng) {
-          console.error('Invalid hidden gem format:', gem);
-          throw new Error('Invalid hidden gem format');
-        }
-      });
-
-      return parsedContent.hiddenGems.map(processGem);
+      const parsedContent = JSON.parse(content);
+      return parsedContent.hiddenGems.map((gem: Gem) => ({
+        title: gem.title,
+        description: gem.description,
+        location: gem.location,
+        coordinates: gem.coordinates
+      }));
     } catch (e: unknown) {
-      console.error('JSON parsing error:', e, '\nContent:', content);
+      console.error('Error parsing JSON:', e);
       if (e instanceof Error) {
-        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+        throw new Error(`Failed to parse OpenAI response: ${e.message}`);
       }
-      throw new Error('Failed to parse OpenAI response as JSON');
+      throw new Error('Failed to parse OpenAI response');
     }
   } catch (error: unknown) {
     console.error('Error generating more hidden gems:', error);
@@ -452,94 +336,36 @@ export const generateMoreHiddenGems = async ({
   }
 };
 
-export const generateMoreActivities = async ({
-  destination,
-  interests,
-  language = 'en',
-  existingActivities
-}: {
-  destination: string;
-  interests: string[];
-  language?: 'en' | 'fr';
-  existingActivities: string[];
-}) => {
+export const generateMoreActivities = async (destination: string): Promise<Activity[]> => {
   try {
-    const systemPrompt = `You are a travel assistant that MUST respond with ONLY a valid JSON object containing an 'activities' array, no other text. Follow these rules:
-1. Response must be a JSON object with a single 'activities' key containing an array of exactly 5 NEW activity suggestions
-2. Each activity must be:
-   - Highly relevant to the user's interests: ${interests.join(', ')}
-   - Specific and actionable
-   - Include timing information
-   - Include location or venue when applicable
-3. Do not include any explanatory text before or after the JSON
-4. Each activity object must follow this exact structure:
-{
-  "title": "Activity Name",
-  "description": "Detailed description of what to do and what to expect",
-  "timing": "${language === 'fr' ? 'Durée suggérée: 2-3 heures' : 'Suggested duration: 2-3 hours'}",
-  "location": "Where to do this activity",
-  "coordinates": {
-    "lat": 12.3456,
-    "lng": 78.9012
-  },
-  "bestTimeOfDay": "${language === 'fr' ? 'Matin' : 'Morning'}"
-}
-5. ${language === 'fr' ? 'ALL text content MUST be in French' : 'All content should be in English'}
-6. Ensure coordinates are as accurate as possible for location-specific activities
-7. Do not repeat any of these existing activities: ${existingActivities.join(', ')}
-8. Response format must be exactly:
-{
-  "activities": [
-    { activity1 },
-    { activity2 },
-    ...
-  ]
-}`;
-
-    const activities = existingActivities.map((activity: string) => `- ${activity}`).join('\n');
-    const userPrompt = language === 'fr'
-      ? `Générez 5 nouvelles suggestions d'activités pour ${destination} qui correspondent aux intérêts suivants: ${interests.join(', ')}. Ces activités doivent être uniques et ne pas inclure:\n${activities}. REPONDEZ UNIQUEMENT AVEC UN OBJET JSON CONTENANT UN TABLEAU 'activities'.`
-      : `Generate 5 new activity suggestions for ${destination} that match these interests: ${interests.join(', ')}. These activities should be unique and not include:\n${activities}. RESPOND ONLY WITH A JSON OBJECT CONTAINING AN 'activities' ARRAY.`;
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: "You are a helpful travel assistant." },
+        { role: "user", content: `Generate more activities for ${destination} in JSON format.` }
       ],
-      model: 'gpt-3.5-turbo',
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      stream: false
+      response_format: { type: "json_object" }
     });
 
-    const content = completion.choices[0]?.message?.content;
+    const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('No content received from OpenAI');
+      throw new Error('No content in OpenAI response');
     }
 
     try {
-      const parsedContent: { activities: { title: string; description: string; timing: string; location: string; coordinates: { lat: number; lng: number }; bestTimeOfDay: string }[] } = JSON.parse(content);
-      if (!parsedContent.activities || !Array.isArray(parsedContent.activities) || parsedContent.activities.length !== 5) {
-        console.error('Invalid response structure:', parsedContent);
-        throw new Error('Invalid response format: expected object with activities array of 5 items');
-      }
-      
-      // Validate each activity
-      parsedContent.activities.forEach(activity => {
-        if (!activity.title || !activity.description || !activity.timing || 
-            !activity.location || !activity.coordinates?.lat || !activity.coordinates?.lng) {
-          console.error('Invalid activity format:', activity);
-          throw new Error('Invalid activity format');
-        }
-      });
-
-      return parsedContent.activities.map(processActivity);
+      const parsedContent = JSON.parse(content);
+      return parsedContent.activities.map((activity: Activity) => ({
+        title: activity.title,
+        description: activity.description,
+        location: activity.location,
+        coordinates: activity.coordinates
+      }));
     } catch (e: unknown) {
-      console.error('JSON parsing error:', e, '\nContent:', content);
+      console.error('Error parsing JSON:', e);
       if (e instanceof Error) {
-        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+        throw new Error(`Failed to parse OpenAI response: ${e.message}`);
       }
-      throw new Error('Failed to parse OpenAI response as JSON');
+      throw new Error('Failed to parse OpenAI response');
     }
   } catch (error: unknown) {
     console.error('Error generating more activities:', error);

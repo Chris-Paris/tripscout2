@@ -27,66 +27,42 @@ export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
       }
     }
 
-    if (location || coordinates) {
-      fetchPhotos();
-    }
+    fetchPhotos();
   }, [location, coordinates]);
 
-  if (photos.length === 0) return null;
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-      >
-        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        <span>
-          {isExpanded
-            ? 'Hide Photos'
-            : 'View Photos'}
-        </span>
-      </button>
-
-      {isExpanded && photos.length > 0 && (
-        <div className="mt-4">
-          {/* Desktop Grid */}
-          <div className="hidden md:grid md:grid-cols-3 gap-4">
-            {photos.map((url, index) => (
-              <div 
-                key={`desktop-${index}`}
-                className="relative aspect-[4/3] h-48 overflow-hidden rounded-lg"
-              >
+    <div>
+      {photos.length > 0 && (
+        <div>
+          <button
+            onClick={toggleExpanded}
+            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+          >
+            <span className="mr-1">
+              {isExpanded ? 'Hide Photos' : 'View Photos'}
+            </span>
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+          {isExpanded && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {photos.slice(0, 4).map((photo, index) => (
                 <img
-                  src={url}
-                  alt={`${location} - Photo ${index + 1}`}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
+                  key={index}
+                  src={photo}
+                  alt={`${location} photo ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
                 />
-              </div>
-            ))}
-          </div>
-          
-          {/* Mobile Horizontal Scroll */}
-          <div className="md:hidden w-screen relative left-1/2 -translate-x-1/2">
-            <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
-              {photos.map((url, index) => (
-                <div 
-                  key={`mobile-${index}`}
-                  className="flex-none w-[90vw] px-2 first:pl-4 last:pr-4 snap-center"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
-                    <img
-                      src={url}
-                      alt={`${location} - Photo ${index + 1}`}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
