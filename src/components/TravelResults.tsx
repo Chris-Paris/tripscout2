@@ -18,9 +18,18 @@ interface TravelResultsProps {
   interests: string[];
 }
 
-type SectionType = keyof typeof expandedSectionsDefault;
+interface SectionState {
+  [key: string]: boolean;
+  attractions: boolean;
+  restaurants: boolean;
+  gems: boolean;
+  activities: boolean;
+  itinerary: boolean;
+  events: boolean;
+  accommodation: boolean;
+}
 
-const expandedSectionsDefault = {
+const expandedSectionsDefault: SectionState = {
   attractions: true,
   restaurants: true,
   gems: true,
@@ -28,9 +37,8 @@ const expandedSectionsDefault = {
   itinerary: true,
   events: true,
   accommodation: true,
-} as const;
+};
 
-// Move translations map outside
 const interestTranslations: Record<string, string> = {
   'Food & Dining': 'Gastronomie',
   'History & Culture': 'Histoire & Culture',
@@ -85,7 +93,7 @@ export function TravelResults({
     }
   }, [suggestions]);
 
-  const toggleSection = (section: SectionType) => {
+  const toggleSection = (section: keyof SectionState) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section],
@@ -194,23 +202,19 @@ export function TravelResults({
     
     if (success) {
       toast({
-        title: language === 'fr' ? 'Succès !' : 'Success!',
-        description: language === 'fr' 
-          ? 'Plan de voyage copié avec succès !' 
-          : 'Travel plan copied successfully!'
+        title: "Copied!",
+        description: "Link copied to clipboard"
       });
     } else {
       toast({
-        variant: "destructive",
-        title: language === 'fr' ? 'Erreur' : 'Error',
-        description: language === 'fr'
-          ? 'Erreur lors du partage du plan de voyage'
-          : 'Error sharing travel plan'
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive"
       });
     }
   };
 
-  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: SectionType }) => {
+  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: keyof SectionState }) => {
     // Don't render the section if it's events and there are no items
     if (type === 'events' && items.length === 0) {
       return null;
@@ -256,14 +260,14 @@ export function TravelResults({
             {type === 'itinerary' ? (
               <>
                 <div className="space-y-8">
-                  {items.map((day) => (
+                  {items.map((day: { day: number; activities: string[] }) => (
                     <div key={day.day} className="border-b pb-6 last:border-b-0">
                       <h3 className="font-medium text-lg mb-4">
                         {language === 'en' ? `Day ${day.day}` : `Jour ${day.day}`}
                       </h3>
                       <div className="space-y-4">
-                        {day.activities.map((activity: string, index: number) => (
-                          <div key={index} className="flex items-start">
+                        {day.activities.map((activity: string) => (
+                          <div className="flex items-start">
                             <div className="w-2 h-2 rounded-full bg-primary mt-2 mr-3 flex-shrink-0" />
                             <div>
                               <p className="text-description text-sm">{activity}</p>
@@ -279,8 +283,8 @@ export function TravelResults({
                     {language === 'en' ? 'Activity Ideas' : 'Idées d\'Activités'}
                   </h3>
                   <div className="space-y-6">
-                    {additionalActivities.map((activity, index) => (
-                      <div key={index} className="border-b pb-4 last:border-b-0">
+                    {additionalActivities.map((activity: { title: string; description: string; timing: string; location: string; coordinates?: { lat: number; lng: number } }) => (
+                      <div className="border-b pb-4 last:border-b-0">
                         <h4 className="font-medium">{activity.title}</h4>
                         <p className="text-description text-sm mt-1">{activity.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-gray-500">
@@ -296,9 +300,8 @@ export function TravelResults({
                         {activity.coordinates && (
                           <div className="mt-4 flex items-center gap-4">
                             <LocationPhotos
-                              title={activity.title}
+                              location={activity.title}
                               coordinates={activity.coordinates}
-                              language={language}
                             />
                             <a
                               href={getGoogleMapsUrl(activity)}
@@ -336,11 +339,11 @@ export function TravelResults({
               </>
             ) : (
               <>
-                {allItems.map((item, index) => {
-                  const relevantInterests = findRelevantInterests(item?.description, interests);
+                {allItems.map((item: { title: string; description: string; location?: string; coordinates?: { lat: number; lng: number } }) => {
+                  const relevantInterests = findRelevantInterests(item.description, interests);
                   return (
-                    <div key={index} className="border-b pb-4 last:border-b-0">
-                      <h3 className="font-medium">{item?.title}</h3>
+                    <div className="border-b pb-4 last:border-b-0">
+                      <h3 className="font-medium">{item.title}</h3>
                       {relevantInterests.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {relevantInterests.map((interest, i) => (
@@ -353,7 +356,7 @@ export function TravelResults({
                           ))}
                         </div>
                       )}
-                      <p className="text-description text-sm mt-1">{item?.description}</p>
+                      <p className="text-description text-sm mt-1">{item.description}</p>
                       {item.location && (
                         <div className="flex items-center text-gray-500 mt-2">
                           <MapPin className="w-4 h-4 mr-1" />
@@ -363,9 +366,8 @@ export function TravelResults({
                       {item.coordinates && (
                         <div className="mt-4 flex items-center gap-4">
                           <LocationPhotos
-                            title={item.title}
+                            location={item.title}
                             coordinates={item.coordinates}
-                            language={language}
                           />
                           <a
                             href={getGoogleMapsUrl(item)}

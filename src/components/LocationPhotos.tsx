@@ -1,25 +1,38 @@
 import { useState, useEffect } from 'react';
-import { getPlacePhotos } from '@/lib/photos';
-import { Coordinates } from '@/types';
+import { getPlacePhotos, getLocationPhotos } from '@/lib/photos';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface LocationPhotosProps {
-  title: string;
-  coordinates: Coordinates;
-  language: 'en' | 'fr';
+  location: string;
+  coordinates?: { lat: number; lng: number };
 }
 
-export function LocationPhotos({ title, coordinates, language }: LocationPhotosProps) {
+export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
   const [photos, setPhotos] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    if (coordinates) {
-      getPlacePhotos(coordinates)
-        .then(setPhotos)
-        .catch(console.error);
+    async function fetchPhotos() {
+      try {
+        if (coordinates) {
+          const placePhotos = await getPlacePhotos(coordinates);
+          setPhotos(placePhotos);
+        } else {
+          const locationPhotos = await getLocationPhotos(location);
+          setPhotos(locationPhotos);
+        }
+      } catch (err) {
+        console.error('Failed to load photos:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load photos');
+        setPhotos([]);
+      }
     }
-  }, [coordinates]);
+
+    if (location || coordinates) {
+      fetchPhotos();
+    }
+  }, [location, coordinates]);
 
   if (photos.length === 0) return null;
 
@@ -32,12 +45,8 @@ export function LocationPhotos({ title, coordinates, language }: LocationPhotosP
         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         <span>
           {isExpanded
-            ? language === 'en'
-              ? 'Hide Photos'
-              : 'Masquer les Photos'
-            : language === 'en'
-              ? 'View Photos'
-              : 'Voir les Photos'}
+            ? 'Hide Photos'
+            : 'View Photos'}
         </span>
       </button>
 
@@ -52,7 +61,7 @@ export function LocationPhotos({ title, coordinates, language }: LocationPhotosP
               >
                 <img
                   src={url}
-                  alt={`${title} - Photo ${index + 1}`}
+                  alt={`${location} - Photo ${index + 1}`}
                   className="absolute inset-0 h-full w-full object-cover"
                   loading="lazy"
                 />
@@ -71,7 +80,7 @@ export function LocationPhotos({ title, coordinates, language }: LocationPhotosP
                   <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
                     <img
                       src={url}
-                      alt={`${title} - Photo ${index + 1}`}
+                      alt={`${location} - Photo ${index + 1}`}
                       className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
                     />
@@ -82,6 +91,7 @@ export function LocationPhotos({ title, coordinates, language }: LocationPhotosP
           </div>
         </div>
       )}
+      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }

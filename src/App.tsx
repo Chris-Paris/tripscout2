@@ -73,7 +73,6 @@ function App() {
         date: data.date,
         duration: data.duration,
         interests: data.interests,
-        language,
       });
 
       setSuggestions(result);

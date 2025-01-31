@@ -202,7 +202,7 @@ export const generateTravelPlan = async ({
       let parsedContent: TravelSuggestions;
       try {
         parsedContent = JSON.parse(trimmedContent);
-      } catch (parseError) {
+      } catch (parseError: any) {
         console.error('Failed to parse JSON. First 50 characters:', trimmedContent.slice(0, 50));
         console.error('Parse error:', parseError);
         throw parseError;
@@ -217,14 +217,14 @@ export const generateTravelPlan = async ({
 
       console.log('Response validation successful');
       return parsedContent;
-    } catch (e) {
+    } catch (e: any) {
       console.error('JSON parsing error:', e);
       console.error('Content type:', typeof content);
       console.error('Content length:', content.length);
       console.error('First 200 characters of content:', content.slice(0, 200));
-      throw new Error(`Failed to parse OpenAI response as JSON: ${(e as Error).message}`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating travel plan:', error);
     if (error instanceof Error) {
       throw new Error(`Failed to generate travel plan: ${error.message}`);
@@ -309,11 +309,11 @@ export const generateMoreAttractions = async ({
       });
 
       return parsedContent.attractions;
-    } catch (e) {
+    } catch (e: any) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${(e as Error).message}`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating more attractions:', error);
     throw error;
   }
@@ -398,11 +398,11 @@ export const generateMoreHiddenGems = async ({
       });
 
       return parsedContent.hiddenGems;
-    } catch (e) {
+    } catch (e: any) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${(e as Error).message}`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating more hidden gems:', error);
     throw error;
   }
@@ -490,11 +490,11 @@ export const generateMoreActivities = async ({
       });
 
       return parsedContent.activities;
-    } catch (e) {
+    } catch (e: any) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${(e as Error).message}`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating more activities:', error);
     throw error;
   }

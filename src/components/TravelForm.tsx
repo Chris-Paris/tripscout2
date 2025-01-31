@@ -130,7 +130,6 @@ export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFor
         <PlacesAutocomplete
           register={form.register}
           setValue={form.setValue}
-          language={language}
         />
         {form.formState.errors.destination && (
           <p className="text-red-500 text-sm mt-1">
