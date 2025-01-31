@@ -5,54 +5,38 @@ import * as z from 'zod';
 import { PlacesAutocomplete } from './PlacesAutocomplete';
 import { analytics } from '@/lib/analytics';
 
-export const interestsTranslations = {
-  en: [
-    'Culture & History',
-    'Food & Dining',
-    'Nature & Outdoors',
-    'Shopping',
-    'Adventure',
-    'Relaxation',
-    'Nightlife',
-    'Family Activities',
-    'Couple Trip',
-  ],
-  fr: [
-    'Culture & Histoire',
-    'Gastronomie',
-    'Nature & Plein Air',
-    'Shopping',
-    'Aventure',
-    'Détente',
-    'Vie Nocturne',
-    'Activités Familiales',
-    'Voyage en couple',
-  ],
-} as const;
+export type Interest = 'Culture' | 'Nature' | 'Food' | 'Shopping' | 'Adventure' | 'Relaxation' | 'History' | 'Art';
 
-export type Interest = (typeof interestsTranslations.en)[number] | (typeof interestsTranslations.fr)[number];
+const interestTranslations: Record<Interest, Record<'en' | 'fr', string>> = {
+  Culture: { en: 'Culture', fr: 'Culture' },
+  Nature: { en: 'Nature', fr: 'Nature' },
+  Food: { en: 'Food', fr: 'Gastronomie' },
+  Shopping: { en: 'Shopping', fr: 'Shopping' },
+  Adventure: { en: 'Adventure', fr: 'Aventure' },
+  Relaxation: { en: 'Relaxation', fr: 'Détente' },
+  History: { en: 'History', fr: 'Histoire' },
+  Art: { en: 'Art', fr: 'Art' }
+};
 
-const formSchema = z.object({
-  destination: z.string().min(2, {
-    message: 'Destination must be at least 2 characters'
-  }),
-  date: z.date(),
-  duration: z.number().min(1, {
-    message: 'Duration must be at least 1 day'
-  }),
-  interests: z.array(z.string()).min(1, {
-    message: 'Select at least one interest'
-  }),
-});
-
-export type FormValues = z.infer<typeof formSchema>;
+const interests: Interest[] = ['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art'];
 
 interface TravelFormProps {
-  onSubmit: (data: FormValues) => Promise<void>;
+  onSubmit: (data: FormValues) => void;
   isLoading: boolean;
   language: 'en' | 'fr';
   onReset: () => void;
 }
+
+export const formSchema = z.object({
+  destination: z.string().min(2, {
+    message: 'Destination must be at least 2 characters.'
+  }),
+  date: z.date(),
+  duration: z.number().min(1).max(30),
+  interests: z.array(z.enum(['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art']))
+});
+
+export type FormValues = z.infer<typeof formSchema>;
 
 export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFormProps) {
   const form = useForm<FormValues>({
@@ -60,19 +44,18 @@ export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFor
     defaultValues: {
       destination: '',
       date: new Date(),
-      duration: 3,
-      interests: [],
+      duration: 7,
+      interests: []
     },
   });
 
   useEffect(() => {
     const currentInterests = form.getValues('interests');
     if (currentInterests.length > 0) {
-      const otherLang = language === 'en' ? 'fr' : 'en';
       const translatedInterests = currentInterests
         .map(interest => {
-          const index = interestsTranslations[otherLang].indexOf(interest as any);
-          return index !== -1 ? interestsTranslations[language][index] : null;
+          const index = interests.indexOf(interest as any);
+          return index !== -1 ? interestTranslations[interest][language] : null;
         })
         .filter((interest): interest is Interest => interest !== null);
 
@@ -184,13 +167,13 @@ export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFor
           {language === 'en' ? 'Interests' : 'Centres d\'intérêt'}
         </label>
         <div className="flex flex-wrap gap-2">
-          {interestsTranslations[language].map((interest) => {
+          {interests.map((interest) => {
             const inputId = `interest-${interest}`;
             return (
               <label
                 key={interest}
                 htmlFor={inputId}
-                className="relative inline-flex items-center cursor-pointer group"
+                className={`inline-flex items-center cursor-pointer group`}
               >
                 <input
                   type="checkbox"
@@ -199,10 +182,10 @@ export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFor
                   value={interest}
                   className="sr-only peer"
                 />
-                <div className="px-2 py-2 rounded-full border border-[#c1121f] bg-white text-[#c1121f]
+                <div className={`px-2 py-2 rounded-full border border-[#c1121f] bg-white text-[#c1121f]
                   peer-checked:bg-[#c1121f] peer-checked:text-white peer-checked:border-[#c1121f] 
-                  hover:border-[#c1121f] hover:border-opacity-70 transition-colors">
-                  {interest}
+                  hover:border-[#c1121f] hover:border-opacity-70 transition-colors`}>
+                  {interestTranslations[interest][language]}
                 </div>
               </label>
             );

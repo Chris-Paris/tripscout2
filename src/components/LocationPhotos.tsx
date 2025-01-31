@@ -9,7 +9,6 @@ interface LocationPhotosProps {
 
 export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
   const [photos, setPhotos] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
@@ -24,7 +23,6 @@ export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
         }
       } catch (err) {
         console.error('Failed to load photos:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load photos');
         setPhotos([]);
       }
     }
@@ -91,7 +89,6 @@ export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
           </div>
         </div>
       )}
-      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }

@@ -20,24 +20,7 @@ interface TravelResultsProps {
 
 interface SectionState {
   [key: string]: boolean;
-  attractions: boolean;
-  restaurants: boolean;
-  gems: boolean;
-  activities: boolean;
-  itinerary: boolean;
-  events: boolean;
-  accommodation: boolean;
 }
-
-const expandedSectionsDefault: SectionState = {
-  attractions: true,
-  restaurants: true,
-  gems: true,
-  activities: true,
-  itinerary: true,
-  events: true,
-  accommodation: true,
-};
 
 const interestTranslations: Record<string, string> = {
   'Food & Dining': 'Gastronomie',
@@ -72,7 +55,15 @@ export function TravelResults({
   interests
 }: TravelResultsProps) {
   const { toast } = useToast();
-  const [expandedSections, setExpandedSections] = useState(expandedSectionsDefault);
+  const [expandedSections, setExpandedSections] = useState<SectionState>({
+    attractions: true,
+    restaurants: true,
+    gems: true,
+    activities: true,
+    itinerary: true,
+    events: true,
+    accommodation: true
+  });
   const [additionalAttractions, setAdditionalAttractions] = useState<any[]>([]);
   const [additionalGems, setAdditionalGems] = useState<any[]>([]);
   const [additionalActivities, setAdditionalActivities] = useState<any[]>([]);
@@ -93,10 +84,10 @@ export function TravelResults({
     }
   }, [suggestions]);
 
-  const toggleSection = (section: keyof SectionState) => {
+  const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
-      [section]: !prev[section],
+      [section]: !prev[section]
     }));
   };
 
@@ -214,7 +205,7 @@ export function TravelResults({
     }
   };
 
-  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: keyof SectionState }) => {
+  const ResultSection = ({ title, items, type }: { title: string; items: any[]; type: string }) => {
     // Don't render the section if it's events and there are no items
     if (type === 'events' && items.length === 0) {
       return null;

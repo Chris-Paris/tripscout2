@@ -19,9 +19,9 @@ export function PlacesAutocomplete({ register, setValue }: PlacesAutocompletePro
     }
 
     // Initialize the autocomplete instance
-    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
       types: ['(cities)'],
-      fields: ['geometry.location', 'formatted_address', 'place_id']
+      fields: ['formatted_address', 'geometry']
     });
 
     autocompleteRef.current = autocomplete;

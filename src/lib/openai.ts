@@ -45,6 +45,36 @@ const validateResponse = (data: any): data is TravelSuggestions => {
   return true;
 };
 
+const processAttraction = (attraction: {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}) => {
+  // Add any necessary processing for attractions here
+  return attraction;
+};
+
+const processGem = (gem: {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}) => {
+  // Add any necessary processing for gems here
+  return gem;
+};
+
+const processActivity = (activity: {
+  title: string;
+  description: string;
+  location?: string;
+  coordinates?: { lat: number; lng: number };
+}) => {
+  // Add any necessary processing for activities here
+  return activity;
+};
+
 export const generateTravelPlan = async ({
   destination,
   date,
@@ -202,10 +232,12 @@ export const generateTravelPlan = async ({
       let parsedContent: TravelSuggestions;
       try {
         parsedContent = JSON.parse(trimmedContent);
-      } catch (parseError: any) {
-        console.error('Failed to parse JSON. First 50 characters:', trimmedContent.slice(0, 50));
-        console.error('Parse error:', parseError);
-        throw parseError;
+      } catch (e: unknown) {
+        console.error('Error parsing JSON:', e);
+        if (e instanceof Error) {
+          throw new Error(`Failed to parse OpenAI response: ${e.message}`);
+        }
+        throw new Error('Failed to parse OpenAI response');
       }
 
       console.log('Successfully parsed JSON response');
@@ -217,19 +249,19 @@ export const generateTravelPlan = async ({
 
       console.log('Response validation successful');
       return parsedContent;
-    } catch (e: any) {
-      console.error('JSON parsing error:', e);
-      console.error('Content type:', typeof content);
-      console.error('Content length:', content.length);
-      console.error('First 200 characters of content:', content.slice(0, 200));
-      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+    } catch (e: unknown) {
+      console.error('Error generating travel plan:', e);
+      if (e instanceof Error) {
+        throw new Error(`Failed to generate travel plan: ${e.message}`);
+      }
+      throw new Error('Failed to generate travel plan');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating travel plan:', error);
     if (error instanceof Error) {
       throw new Error(`Failed to generate travel plan: ${error.message}`);
     }
-    throw new Error('An unexpected error occurred while generating the travel plan');
+    throw new Error('Failed to generate travel plan');
   }
 };
 
@@ -308,14 +340,20 @@ export const generateMoreAttractions = async ({
         }
       });
 
-      return parsedContent.attractions;
-    } catch (e: any) {
+      return parsedContent.attractions.map(processAttraction);
+    } catch (e: unknown) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      if (e instanceof Error) {
+        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      }
+      throw new Error('Failed to parse OpenAI response as JSON');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating more attractions:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate more attractions: ${error.message}`);
+    }
+    throw new Error('Failed to generate more attractions');
   }
 };
 
@@ -397,14 +435,20 @@ export const generateMoreHiddenGems = async ({
         }
       });
 
-      return parsedContent.hiddenGems;
-    } catch (e: any) {
+      return parsedContent.hiddenGems.map(processGem);
+    } catch (e: unknown) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      if (e instanceof Error) {
+        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      }
+      throw new Error('Failed to parse OpenAI response as JSON');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating more hidden gems:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate more hidden gems: ${error.message}`);
+    }
+    throw new Error('Failed to generate more hidden gems');
   }
 };
 
@@ -489,13 +533,19 @@ export const generateMoreActivities = async ({
         }
       });
 
-      return parsedContent.activities;
-    } catch (e: any) {
+      return parsedContent.activities.map(processActivity);
+    } catch (e: unknown) {
       console.error('JSON parsing error:', e, '\nContent:', content);
-      throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      if (e instanceof Error) {
+        throw new Error(`Failed to parse OpenAI response as JSON: ${e.message}`);
+      }
+      throw new Error('Failed to parse OpenAI response as JSON');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating more activities:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate more activities: ${error.message}`);
+    }
+    throw new Error('Failed to generate more activities');
   }
 };
