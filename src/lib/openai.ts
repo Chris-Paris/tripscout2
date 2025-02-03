@@ -85,29 +85,30 @@ export const generateTravelPlan = async ({
 2. Do not include any explanatory text before or after the JSON
 3. All string values must be properly escaped
 4. CRITICAL: All recommendations MUST be highly relevant to the user's ${interests.join(', ')}
-5. For each section, provide at least:
+6. DO NEVER SUGGEST THE SAME PLACE TWICE
+7. For each section, provide at least:
    - 5 must-see attractions related to that interest
    - 5 hidden gems related to that interest
    - 3 restaurants that match the interest (especially for Food & Dining)
-6. CRITICAL: The itinerary MUST:
+8. CRITICAL: The itinerary MUST:
    - Include exactly ${duration} days
    - Have exactly 3 activities per day (morning, afternoon, evening)
    - Group activities by interest when possible
    - Include specific times for each activity
    - Reference the recommended attractions, gems, and restaurants
-7. Provide at least 3 different relevant districts or areas where to stay, considering the selected interests
-8. MUST include accurate coordinates (latitude and longitude) for the destination and all locations
-9. ${language === 'fr' ? 'CRITICAL: ALL text content MUST be in French, including descriptions, activities, and advice' : 'All content should be in English'}
-10. For itinerary activities, ${language === 'fr' ? 'use French time periods ("Matin: 9h00", "Après-midi: 14h00", "Soir: 19h00")' : 'use English time periods ("Morning: 9:00 AM", "Afternoon: 2:00 PM", "Evening: 7:00 PM")'} 
-11. When suggesting restaurants, prioritize:
+9. Provide at least 3 different relevant districts or areas where to stay, considering the selected interests
+10. MUST include accurate coordinates (latitude and longitude) for the destination and all locations
+11. ${language === 'fr' ? 'CRITICAL: ALL text content MUST be in French, including descriptions, activities, and advice' : 'All content should be in English'}
+12. For itinerary activities, ${language === 'fr' ? 'use French time periods ("Matin: 9h00", "Après-midi: 14h00", "Soir: 19h00")' : 'use English time periods ("Morning: 9:00 AM", "Afternoon: 2:00 PM", "Evening: 7:00 PM")'} 
+13. When suggesting restaurants, prioritize:
     - Local cuisine for "Food & Dining"
     - Family-friendly options for "Family Activities"
     - Atmospheric venues for "Culture & History"
     - Quick service for "Adventure" activities
-12. For accommodation recommendations:
+14. For accommodation recommendations:
     - Consider proximity to attractions matching interests
     - Suggest areas with relevant amenities (e.g., nightlife districts for "Nightlife" interest)
-13. Use the exact structure below:
+15. Use the exact structure below:
 
 {
   "destination": {
@@ -258,11 +259,33 @@ export const generateTravelPlan = async ({
 
 export const generateMoreAttractions = async (destination: string): Promise<Attraction[]> => {
   try {
+    const systemPrompt = `You are a travel assistant that generates detailed attraction information. 
+For each attraction, you MUST include:
+1. A descriptive title
+2. A detailed description
+3. The specific location (address or area)
+4. Accurate coordinates (latitude and longitude)
+
+ALWAYS return a JSON object with this exact structure:
+{
+  "attractions": [
+    {
+      "title": "Attraction Name",
+      "description": "Detailed description of the attraction",
+      "location": "Specific address or area",
+      "coordinates": {
+        "lat": 48.8584,
+        "lng": 2.2945
+      }
+    }
+  ]
+}`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a helpful travel assistant." },
-        { role: "user", content: `Generate more attractions for ${destination} in JSON format.` }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate 5 must-see attractions for ${destination}. Include specific locations and coordinates.` }
       ],
       response_format: { type: "json_object" }
     });
@@ -274,12 +297,24 @@ export const generateMoreAttractions = async (destination: string): Promise<Attr
 
     try {
       const parsedContent = JSON.parse(content);
-      return parsedContent.attractions.map((attraction: Attraction) => ({
-        title: attraction.title,
-        description: attraction.description,
-        location: attraction.location,
-        coordinates: attraction.coordinates
-      }));
+      if (!parsedContent.attractions || !Array.isArray(parsedContent.attractions)) {
+        throw new Error('Invalid response format: missing attractions array');
+      }
+
+      return parsedContent.attractions.map((attraction: Attraction) => {
+        if (!attraction.title || !attraction.description || !attraction.location || !attraction.coordinates?.lat || !attraction.coordinates?.lng) {
+          throw new Error('Invalid attraction format: missing required fields');
+        }
+        return {
+          title: attraction.title,
+          description: attraction.description,
+          location: attraction.location,
+          coordinates: {
+            lat: attraction.coordinates.lat,
+            lng: attraction.coordinates.lng
+          }
+        };
+      });
     } catch (e: unknown) {
       console.error('Error parsing JSON:', e);
       if (e instanceof Error) {
@@ -298,11 +333,33 @@ export const generateMoreAttractions = async (destination: string): Promise<Attr
 
 export const generateMoreHiddenGems = async (destination: string): Promise<Gem[]> => {
   try {
+    const systemPrompt = `You are a travel assistant that generates detailed hidden gem locations. 
+For each hidden gem, you MUST include:
+1. A descriptive title
+2. A detailed description explaining why it's special
+3. The specific location (address or area)
+4. Accurate coordinates (latitude and longitude)
+
+ALWAYS return a JSON object with this exact structure:
+{
+  "hiddenGems": [
+    {
+      "title": "Hidden Gem Name",
+      "description": "Detailed description of why this place is special",
+      "location": "Specific address or area",
+      "coordinates": {
+        "lat": 48.8584,
+        "lng": 2.2945
+      }
+    }
+  ]
+}`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a helpful travel assistant." },
-        { role: "user", content: `Generate more hidden gems for ${destination} in JSON format.` }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate 5 hidden gems in ${destination} that are off the beaten path. Include specific locations and coordinates.` }
       ],
       response_format: { type: "json_object" }
     });
@@ -314,12 +371,24 @@ export const generateMoreHiddenGems = async (destination: string): Promise<Gem[]
 
     try {
       const parsedContent = JSON.parse(content);
-      return parsedContent.hiddenGems.map((gem: Gem) => ({
-        title: gem.title,
-        description: gem.description,
-        location: gem.location,
-        coordinates: gem.coordinates
-      }));
+      if (!parsedContent.hiddenGems || !Array.isArray(parsedContent.hiddenGems)) {
+        throw new Error('Invalid response format: missing hiddenGems array');
+      }
+
+      return parsedContent.hiddenGems.map((gem: Gem) => {
+        if (!gem.title || !gem.description || !gem.location || !gem.coordinates?.lat || !gem.coordinates?.lng) {
+          throw new Error('Invalid gem format: missing required fields');
+        }
+        return {
+          title: gem.title,
+          description: gem.description,
+          location: gem.location,
+          coordinates: {
+            lat: gem.coordinates.lat,
+            lng: gem.coordinates.lng
+          }
+        };
+      });
     } catch (e: unknown) {
       console.error('Error parsing JSON:', e);
       if (e instanceof Error) {
@@ -338,11 +407,33 @@ export const generateMoreHiddenGems = async (destination: string): Promise<Gem[]
 
 export const generateMoreActivities = async (destination: string): Promise<Activity[]> => {
   try {
+    const systemPrompt = `You are a travel assistant that generates detailed activity suggestions. 
+For each activity, you MUST include:
+1. A descriptive title
+2. A detailed description of what to do
+3. The specific location (address or area)
+4. Accurate coordinates (latitude and longitude)
+
+ALWAYS return a JSON object with this exact structure:
+{
+  "activities": [
+    {
+      "title": "Activity Name",
+      "description": "Detailed description of what to do",
+      "location": "Specific address or area",
+      "coordinates": {
+        "lat": 48.8584,
+        "lng": 2.2945
+      }
+    }
+  ]
+}`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a helpful travel assistant." },
-        { role: "user", content: `Generate more activities for ${destination} in JSON format.` }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate 5 interesting activities to do in ${destination}. Include specific locations and coordinates.` }
       ],
       response_format: { type: "json_object" }
     });
@@ -354,12 +445,24 @@ export const generateMoreActivities = async (destination: string): Promise<Activ
 
     try {
       const parsedContent = JSON.parse(content);
-      return parsedContent.activities.map((activity: Activity) => ({
-        title: activity.title,
-        description: activity.description,
-        location: activity.location,
-        coordinates: activity.coordinates
-      }));
+      if (!parsedContent.activities || !Array.isArray(parsedContent.activities)) {
+        throw new Error('Invalid response format: missing activities array');
+      }
+
+      return parsedContent.activities.map((activity: Activity) => {
+        if (!activity.title || !activity.description || !activity.location || !activity.coordinates?.lat || !activity.coordinates?.lng) {
+          throw new Error('Invalid activity format: missing required fields');
+        }
+        return {
+          title: activity.title,
+          description: activity.description,
+          location: activity.location,
+          coordinates: {
+            lat: activity.coordinates.lat,
+            lng: activity.coordinates.lng
+          }
+        };
+      });
     } catch (e: unknown) {
       console.error('Error parsing JSON:', e);
       if (e instanceof Error) {

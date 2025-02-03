@@ -5,9 +5,10 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 interface LocationPhotosProps {
   location: string;
   coordinates?: { lat: number; lng: number };
+  language: string;
 }
 
-export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
+export function LocationPhotos({ location, coordinates, language }: LocationPhotosProps) {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -43,7 +44,7 @@ export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
             className="flex items-center text-sm text-gray-500 hover:text-gray-700"
           >
             <span className="mr-1">
-              {isExpanded ? 'Hide Photos' : 'View Photos'}
+              {isExpanded ? (language === 'fr' ? 'Masquer les photos' : 'Hide Photos') : (language === 'fr' ? 'Voir les photos' : 'View Photos')}
             </span>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4" />
@@ -52,13 +53,13 @@ export function LocationPhotos({ location, coordinates }: LocationPhotosProps) {
             )}
           </button>
           {isExpanded && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-2 flex flex-row gap-2 overflow-x-auto scrollbar-hide">
               {photos.slice(0, 4).map((photo, index) => (
                 <img
                   key={index}
                   src={photo}
                   alt={`${location} photo ${index + 1}`}
-                  className="w-full h-24 object-cover rounded"
+                  className="w-48 h-48 object-cover rounded"
                 />
               ))}
             </div>

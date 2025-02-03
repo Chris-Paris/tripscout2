@@ -20,7 +20,7 @@ export function PlacesAutocomplete({
     }
 
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ['(cities)'],
+      types: ['(regions)'],
       fields: ['formatted_address', 'geometry']
     });
 

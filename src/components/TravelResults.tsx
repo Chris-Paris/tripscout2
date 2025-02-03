@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Map, MapPin, Share2, Loader2, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Map, MapPin, Share2, Loader2 } from 'lucide-react';
 import { TravelSuggestions } from '@/types';
 import { LocationPhotos } from './LocationPhotos';
 import { StaticMap } from './StaticMap';
@@ -203,6 +203,8 @@ export function TravelResults({
       ? [...items, ...additionalAttractions]
       : type === 'gems'
       ? [...items, ...additionalGems]
+      : type === 'activities'
+      ? [...items, ...additionalActivities]
       : items;
 
     return (
@@ -262,25 +264,22 @@ export function TravelResults({
                     {language === 'en' ? 'Activity Ideas' : 'Idées d\'Activités'}
                   </h3>
                   <div className="space-y-6">
-                    {additionalActivities.map((activity: { title: string; description: string; timing: string; location: string; coordinates?: { lat: number; lng: number } }) => (
+                    {additionalActivities.map((activity: { title: string; description: string; location: string; coordinates?: { lat: number; lng: number } }) => (
                       <div className="border-b pb-4 last:border-b-0">
                         <h4 className="font-medium">{activity.title}</h4>
                         <p className="text-description text-sm mt-1">{activity.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-gray-500">
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span>{activity.timing}</span>
-                          </div>
-                          <div className="flex items-center">
+                        {activity.location && (
+                          <div className="flex items-center text-gray-500 mt-2">
                             <MapPin className="w-4 h-4 mr-1" />
                             <span>{activity.location}</span>
                           </div>
-                        </div>
+                        )}
                         {activity.coordinates && (
                           <div className="mt-4 flex items-center gap-4">
                             <LocationPhotos
                               location={activity.title}
                               coordinates={activity.coordinates}
+                              language={language}
                             />
                             <a
                               href={getGoogleMapsUrl(activity)}
@@ -347,6 +346,7 @@ export function TravelResults({
                           <LocationPhotos
                             location={item.title}
                             coordinates={item.coordinates}
+                            language={language}
                           />
                           <a
                             href={getGoogleMapsUrl(item)}
@@ -362,14 +362,14 @@ export function TravelResults({
                     </div>
                   );
                 })}
-                {(type === 'attractions' || type === 'gems') && (
+                {(type === 'attractions' || type === 'gems' || type === 'activities') && (
                   <div className="mt-6 flex justify-center">
                     <button
-                      onClick={type === 'attractions' ? handleLoadMoreAttractions : handleLoadMoreGems}
-                      disabled={isLoadingMore[type === 'attractions' ? 'attractions' : 'gems']}
+                      onClick={type === 'attractions' ? handleLoadMoreAttractions : type === 'gems' ? handleLoadMoreGems : handleLoadMoreActivities}
+                      disabled={isLoadingMore[type === 'attractions' ? 'attractions' : type === 'gems' ? 'gems' : 'activities']}
                       className="inline-flex items-center justify-center px-4 md:px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                      {isLoadingMore[type === 'attractions' ? 'attractions' : 'gems'] ? (
+                      {isLoadingMore[type === 'attractions' ? 'attractions' : type === 'gems' ? 'gems' : 'activities'] ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           <span>{language === 'en' ? 'Loading...' : 'Chargement...'}</span>

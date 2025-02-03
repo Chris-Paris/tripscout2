@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { PlacesAutocomplete } from './PlacesAutocomplete';
 import { analytics } from '@/lib/analytics';
 
-export type Interest = 'Culture' | 'Nature' | 'Food' | 'Shopping' | 'Adventure' | 'Relaxation' | 'History' | 'Art';
+export type Interest = 'Culture' | 'Nature' | 'Food' | 'Shopping' | 'Adventure' | 'Relaxation' | 'History' | 'Art' | 'Couple Trip' | 'Family Trip' | 'Night Life';
 
 const interestTranslations: Record<Interest, Record<'en' | 'fr', string>> = {
   Culture: { en: 'Culture', fr: 'Culture' },
@@ -15,10 +15,13 @@ const interestTranslations: Record<Interest, Record<'en' | 'fr', string>> = {
   Adventure: { en: 'Adventure', fr: 'Aventure' },
   Relaxation: { en: 'Relaxation', fr: 'Détente' },
   History: { en: 'History', fr: 'Histoire' },
-  Art: { en: 'Art', fr: 'Art' }
+  Art: { en: 'Art', fr: 'Art' },
+  'Couple Trip': { en: 'Couple Trip', fr: 'Voyage en couple' },
+  'Family Trip': { en: 'Family Trip', fr: 'Voyage en famille' },
+  'Night Life': { en: 'Night Life', fr: 'Vie nocturne' }
 };
 
-const interests: Interest[] = ['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art'];
+const interests: Interest[] = ['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art', 'Couple Trip', 'Family Trip', 'Night Life'];
 
 interface TravelFormProps {
   onSubmit: (data: FormValues) => void;
@@ -33,7 +36,7 @@ export const formSchema = z.object({
   }),
   date: z.date(),
   duration: z.number().min(1).max(30),
-  interests: z.array(z.enum(['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art']))
+  interests: z.array(z.enum(['Culture', 'Nature', 'Food', 'Shopping', 'Adventure', 'Relaxation', 'History', 'Art', 'Couple Trip', 'Family Trip', 'Night Life']))
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -44,7 +47,7 @@ export function TravelForm({ onSubmit, isLoading, language, onReset }: TravelFor
     defaultValues: {
       destination: '',
       date: new Date(),
-      duration: 7,
+      duration: 3,
       interests: []
     },
   });
